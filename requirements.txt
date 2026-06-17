@@ -1,6 +1,6 @@
 playwright==1.41.0
-playwright-stealth==1.0.6
 curl_cffi==0.5.10
 pyyaml==6.0.1
 loguru==0.7.2
 pydantic==2.6.1
+playwright-stealth==1.0.6

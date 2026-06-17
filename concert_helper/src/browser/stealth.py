@@ -1,4 +1,5 @@
 from playwright.async_api import Page
+from playwright_stealth import stealth_async
 from loguru import logger
 import random
 import asyncio
@@ -6,9 +7,8 @@ import asyncio
 class StealthManager:
     """
     ----------------- Browser Stealth Manager --------------------------
-    Manually masks Playwright fingerprints to bypass anti-bot detection.
-    This implementation is designed to be zero-dependency to avoid
-    system-level Python version conflicts.
+    Orchestrates browser fingerprint masking using playwright-stealth
+    and adds behavioral humanity layers.
     """
 
     USER_AGENTS = [
@@ -20,19 +20,13 @@ class StealthManager:
     @staticmethod
     async def apply_stealth(page: Page):
         """
-        Injects JavaScript to mask the 'webdriver' flag and other bot indicators.
-        """
-        stealth_js = """
-        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-        window.chrome = { runtime: {} };
-        Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-        Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] });
+        Uses the official playwright-stealth library to mask webdriver flags.
         """
         try:
-            await page.add_init_script(stealth_js)
-            logger.debug("Manual stealth scripts injected into page.")
+            await stealth_async(page)
+            logger.debug("Official playwright-stealth applied to page.")
         except Exception as e:
-            logger.error(f"Failed to apply manual stealth: {e}")
+            logger.error(f"Failed to apply playwright-stealth: {e}")
 
     @staticmethod
     def get_human_context_args():
@@ -49,7 +43,7 @@ class StealthManager:
 
     @staticmethod
     async def human_delay(min_sec: float = 0.5, max_sec: float = 1.5):
-        """Simulates human thinking time."""
+        """Simulates human thinking time to avoid pattern detection."""
         await asyncio.sleep(random.uniform(min_sec, max_sec))
 
     @staticmethod
