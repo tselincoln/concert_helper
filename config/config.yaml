@@ -1,0 +1,42 @@
+# Global Framework Settings
+framework:
+  log_level: "INFO"
+  timeout_ms: 30000
+  retry_attempts: 3
+
+# User Profiles for Multi-Account Management
+profiles:
+  - name: "premium_user_01"
+    billing:
+      card_last4: "XXXX"
+      billing_address_placeholder: "123 Stealth St, Suite 100"
+    preferences:
+      seat_preference: "window"
+      auto_checkout: true
+    proxy_type: "residential"
+
+  - name: "bulk_bot_01"
+    billing:
+      card_last4: "XXXX"
+      billing_address_placeholder: "456 Proxy Ave, Unit 2"
+    preferences:
+      seat_preference: "aisle"
+      auto_checkout: false
+    proxy_type: "mobile"
+
+# Proxy Infrastructure
+proxies:
+  residential:
+    - host: "res-proxy-1.provider.com"
+      port: 8080
+      user: "user_res_01"
+      pass: "pass_res_01"
+    - host: "res-proxy-2.provider.com"
+      port: 8080
+      user: "user_res_02"
+      pass: "pass_res_02"
+  mobile:
+    - host: "mob-proxy-1.provider.com"
+      port: 9000
+      user: "user_mob_01"
+      pass: "pass_mob_01"
