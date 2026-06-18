@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 from playwright.async_api import Browser, Page, TimeoutError
 
-from src.db.store import DatabaseManager
-from src.config.loader import ConfigLoader
+from src.utils.database import DatabaseManager
+from src.config.loader import load_profiles
 from src.sniper.context_factory import LeanContextFactory
 from src.sniper.stealth_actions import wait_for_active, human_click, human_type
 
@@ -24,25 +24,20 @@ class ClickSniper:
     the execution logic.
     """
 
-    def __init__(self, db_path: str, profile_name: str, event_id: str):
-        self.db_path = db_path
-        self.profile_name = profile_name
+    def __init__(self, browser: Browser, profile: Any, event_id: str, db_path: str):
+        self.browser = browser
+        self.profile = profile
         self.event_id = event_id
+        self.db_path = db_path
         
-        # Initialize data access and config
-        self.store = DatabaseManager(self.db_path)
-        self.config_loader = ConfigLoader()
+        # Initialize data access
+        self.store = DatabaseManager()
         
         # Load recon schema for the specific event
         # Expects a JSON dict of selectors from the site_schemas table
         self.schema = self._load_event_schema(event_id)
         if not self.schema:
             raise RuntimeError(f"No recon schema found for event_id: {event_id}")
-        
-        # Load billing profile from config/profiles.yaml
-        self.profile = self.config_loader.get_profile(profile_name)
-        if not self.profile:
-            raise RuntimeError(f"Profile '{profile_name}' not found in config.")
         
         # Set target URL from the schema
         self.target_url = self.schema.get("target_url")
@@ -56,9 +51,8 @@ class ClickSniper:
         """
         Retrieves the mapped DOM selectors for the event from the database.
         """
-        # Assuming store.py provides a method to fetch the schema as a dict
-        # If not, it would query: SELECT selector_value FROM site_schemas WHERE event_id = ?
-        return self.store.get_schema(self.event_id)
+        # Use the DatabaseManager to fetch the schema for the event
+        return self.store.get_schema(event_id)
 
     async def _handle_response(self, response):
         """
@@ -71,9 +65,8 @@ class ClickSniper:
             
             # Log the event to SQLite checkout_logs
             try:
-                # We log the URL and status as part of the response payload
                 self.store.log_checkout(
-                    profile=self.profile_name,
+                    profile=self.profile.name,
                     status="API_CALL",
                     payload={"url": url, "status": status},
                     error=None
@@ -85,11 +78,13 @@ class ClickSniper:
         """
         Iterates through required billing fields and fills them if the elements exist.
         """
-        billing = self.profile.get("billing", {})
+        # Assuming profile is a dataclass/object from loader.py
+        # If it's a dict, use .get()
+        billing = getattr(self.profile, 'billing', {}) if not isinstance(self.profile, dict) else self.profile.get('billing', {})
         
         # Map schema keys to profile data keys
         field_mapping = {
-            "field_name": billing.get("name"),
+            "field_username": billing.get("name"),
             "field_email": billing.get("email"),
             "field_phone": billing.get("phone"),
             "field_card": billing.get("card_number"),
@@ -113,7 +108,7 @@ class ClickSniper:
             else:
                 logger.debug(f"Field {schema_key} not found on page; skipping.")
 
-    async def run(self, browser: Browser) -> bool:
+    async def run(self) -> bool:
         """
         Executes the full snipe sequence from navigation to form submission.
         Returns True on success, False on TimeoutError.
@@ -123,8 +118,8 @@ class ClickSniper:
             # Step 1 — Context Setup
             # Create a lean context (Cookies, UA, Fingerprints) via the factory
             context = await LeanContextFactory.create_context(
-                browser, 
-                profile_name=self.profile_name
+                self.browser, 
+                profile_name=self.profile.name
             )
             page = await context.new_page()
 
@@ -138,22 +133,25 @@ class ClickSniper:
             logger.info("Navigated to event page")
 
             # Step 3 — Ticket Selection
-            select_btn = self.schema.get("select_ticket_btn")
+            select_btn = self.schema.get("next_step_btn") # Match recon schema key
             await wait_for_active(page, select_btn)
             await human_click(page, select_btn)
             logger.info("Ticket type selected")
 
-            # Step 4 — Add to Cart
-            add_btn = self.schema.get("add_to_cart_btn")
-            await wait_for_active(page, add_btn)
-            await human_click(page, add_btn)
-            logger.info("Added to cart")
+            # Step 4 — Add to Cart / Proceed
+            # In some KKTIX flows, this is a separate btn. If not in schema, skip.
+            add_btn = self.schema.get("quantity_plus_btn")
+            if add_btn:
+                await wait_for_active(page, add_btn)
+                await human_click(page, add_btn)
+                logger.info("Quantity adjusted")
 
             # Step 5 — Proceed to Checkout
-            checkout_btn = self.schema.get("checkout_btn")
-            await wait_for_active(page, checkout_btn)
-            await human_click(page, checkout_btn)
-            logger.info("Navigated to checkout")
+            checkout_btn = self.schema.get("payment_confirm_btn")
+            if checkout_btn:
+                await wait_for_active(page, checkout_btn)
+                await human_click(page, checkout_btn)
+                logger.info("Navigated to checkout")
 
             # Step 6 — Form Fill
             await self._fill_checkout(page)
@@ -164,7 +162,7 @@ class ClickSniper:
         except TimeoutError:
             logger.error(f"Snipe failed: Timeout reached while waiting for elements.")
             self.store.log_checkout(
-                profile=self.profile_name,
+                profile=self.profile.name,
                 status="TIMEOUT",
                 payload=None,
                 error="Playwright TimeoutError during execution flow"
@@ -174,7 +172,7 @@ class ClickSniper:
         except Exception as e:
             logger.exception(f"Unexpected error during snipe: {e}")
             self.store.log_checkout(
-                profile=self.profile_name,
+                profile=self.profile.name,
                 status="CRASH",
                 payload=None,
                 error=str(e)

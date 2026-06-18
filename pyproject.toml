@@ -1,0 +1,23 @@
+[project]
+name = "concert-helper"
+version = "0.1.0"
+description = "Multi-profile concert ticket automation system"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "playwright",
+    "playwright-stealth",
+    "pyyaml",
+    "aiosqlite",
+]
+
+[project.scripts]
+concert-helper = "main:main"
+
+[tool.uv]
+# UV specific configuration
+
+dev-dependencies = [
+    "pytest >= 8.0.0",
+    "pytest-asyncio >= 0.23.0",
+]

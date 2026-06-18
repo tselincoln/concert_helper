@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional, Set
 
 from playwright.async_api import Browser, BrowserContext, Route
-from src.db.store import Store
+from src.utils.database import DatabaseManager as Store
 
 @dataclass
 class BillingProfile:

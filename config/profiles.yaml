@@ -1,0 +1,68 @@
+# Billing Profiles Configuration
+# Each profile represents a unique identity and network fingerprint for ticket sniping.
+
+profiles:
+  - name: "primary_alpha"
+    proxy_url: "http://user1:pass1@proxy-cluster-01.net:8080"
+    billing:
+      name: "Lincoln Tselincoln"
+      email: "lincoln.alpha@example.com"
+      phone: "+852 9123 4567"
+      card_number: "4111222233334444"
+      expiry: "12/26"
+      cvv: "123"
+    target_events:
+      - event_id: "evt_kktix_001"
+        url: "https://kktix.com/events/evt_kktix_001"
+
+  - name: "secondary_beta"
+    proxy_url: "http://user2:pass2@proxy-cluster-02.net:8080"
+    billing:
+      name: "Jane Doe"
+      email: "jane.beta@example.com"
+      phone: "+852 9234 5678"
+      card_number: "5555666677778888"
+      expiry: "08/25"
+      cvv: "456"
+    target_events:
+      - event_id: "evt_kktix_001"
+        url: "https://kktix.com/events/evt_kktix_001"
+
+  - name: "backup_gamma"
+    proxy_url: "http://user3:pass3@proxy-cluster-03.net:8080"
+    billing:
+      name: "Robert Smith"
+      email: "robert.gamma@example.com"
+      phone: "+852 9345 6789"
+      card_number: "4000111122223333"
+      expiry: "01/27"
+      cvv: "789"
+    target_events:
+      - event_id: "evt_kktix_001"
+        url: "https://kktix.com/events/evt_kktix_001"
+
+  - name: "stealth_delta"
+    proxy_url: "http://user4:pass4@proxy-cluster-04.net:8080"
+    billing:
+      name: "Alice Wong"
+      email: "alice.delta@example.com"
+      phone: "+852 9456 7890"
+      card_number: "4222333344445555"
+      expiry: "11/25"
+      cvv: "321"
+    target_events:
+      - event_id: "evt_kktix_001"
+        url: "https://kktix.com/events/evt_kktix_001"
+
+  - name: "reserve_epsilon"
+    proxy_url: "http://user5:pass5@proxy-cluster-05.net:8080"
+    billing:
+      name: "Kevin Chen"
+      email: "kevin.epsilon@example.com"
+      phone: "+852 9567 8901"
+      card_number: "5100222233334444"
+      expiry: "03/26"
+      cvv: "654"
+    target_events:
+      - event_id: "evt_kktix_001"
+        url: "https://kktix.com/events/evt_kktix_001"
