@@ -142,28 +142,7 @@ class DatabaseManager:
                 error
             ))
             conn.commit()
-
-    def get_schema(self, event_id: str) -> Optional[dict]:
-    """
-    Reconstructs the full selector schema dict for an event_id.
-    Reads all per-field rows for the event's domain and assembles them
-    into the flat dict that ClickSniper expects.
-    """
-    # The profiler stores schemas keyed by domain, not event_id.
-    # We need to look up the domain associated with this event_id.
-    # Strategy: store event_id→domain mapping in a new column, OR
-    # use the target_url stored in the schema to derive the domain.
-    # Simplest fix: store event_id as the domain value during recon.
-    query = """
-        SELECT field_id, selector_value FROM site_schemas
-        WHERE site_domain = ?
-    """
-    with self.get_connection() as conn:
-        rows = conn.execute(query, (event_id,)).fetchall()
-        if not rows:
-            return None
-        schema = {row["field_id"]: row["selector_value"] for row in rows}
-        return schema
+     
 
 if __name__ == "__main__":
     # Self-test block
