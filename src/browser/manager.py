@@ -96,3 +96,38 @@ class BrowserManager:
             await self.playwright.stop()
             self.playwright = None
         logger.info("Browser resources released.")
+
+    async def collect(self, profile_name: str = "default"):
+        """
+        HITL Session Collector. Launches a visible browser for human login,
+        then harvests cookies/tokens into the database via SessionHarvester.
+        """
+        from src.browser.harvester import SessionHarvester
+        from src.utils.database import DatabaseManager
+
+        db = DatabaseManager()
+        browser = await self.launch_browser(headless=False)
+        context = await self.create_context(
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            viewport={"width": 1920, "height": 1080},
+        )
+
+        harvester = SessionHarvester(db, profile_name)
+        await harvester.attach(context)
+
+        page = await context.new_page()
+        await self.apply_stealth(page)
+        await page.goto("https://kktix.com/users/sign_in", wait_until="domcontentloaded")
+
+        print("\n" + "="*60)
+        print("ACTION REQUIRED: Log in to KKTIX in the browser window.")
+        print("Press ENTER here when login is complete...")
+        print("="*60 + "\n")
+        input()  # HITL pause gate
+
+        # Final harvest after login
+        await harvester.harvest()
+        cookies = await context.cookies()
+        print(f"Session saved for {profile_name}. Cookie count: {len(cookies)}")
+
+        await self.close()

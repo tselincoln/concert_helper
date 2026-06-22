@@ -117,10 +117,19 @@ class ClickSniper:
         try:
             # Step 1 — Context Setup
             # Create a lean context (Cookies, UA, Fingerprints) via the factory
-            context = await LeanContextFactory.create_context(
-                self.browser, 
-                profile_name=self.profile.name
+            proxy_conf = {"server": self.profile.proxy_url} if self.profile.proxy_url else None
+            from src.sniper.context_factory import BillingProfile as BillingProfileDC
+            billing_obj = BillingProfileDC(
+                name=self.profile.name,
+                email=self.profile.billing.get("email", ""),
+                phone=self.profile.billing.get("phone", ""),
+                card_number=self.profile.billing.get("card_number", ""),
+                expiry=self.profile.billing.get("expiry", ""),
+                cvv=self.profile.billing.get("cvv", ""),
+                proxy_url=self.profile.proxy_url,
             )
+            factory = LeanContextFactory(self.browser, proxy_conf, billing_obj)
+            context = await factory.create()
             page = await context.new_page()
 
             # Step 7 — Network Response Observer

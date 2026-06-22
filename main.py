@@ -50,9 +50,9 @@ async def handle_hitl(args):
     """
     logger.info(f"Starting HITL session collection for profile: {args.profile}...")
     try:
-        collector = BrowserCollector(profile_name=args.profile)
+        collector = BrowserCollector()
         # BrowserCollector.collect() launches browser and saves result to active_sessions table
-        await collector.collect()
+        await collector.collect(profile_name=args.profile)
         print(f"Session saved for profile {args.profile}.")
     except Exception as e:
         logger.exception(f"HITL collection failed: {e}")
