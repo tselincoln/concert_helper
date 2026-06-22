@@ -58,10 +58,10 @@ class Profiler:
                 continue
 
         # Save to DB
-        domain = target_url.split("//")[-1].split("/")[0]
         for key, val in full_schema.items():
-            if key != "event_id" and key != "target_url":
-                self.db.update_site_schema(domain, key, "xpath", val)
+            if key == "event_id":
+                continue
+            self.db.update_site_schema(event_id, key, "xpath", val)
 
         return full_schema
 
